@@ -2,12 +2,17 @@ provider "aws" {
   region = var.region
 }
 
+# Use existing IAM role (must exist in AWS already)
+data "aws_iam_role" "ecs_task_execution_role" {
+  name = "ecsTaskExecutionRole"
+}
+
 # ECR Repository
 resource "aws_ecr_repository" "python_app_repo" {
   name = "python-app-repo"
 }
 
-# Get default VPC and subnet
+# Get default VPC and Subnets
 data "aws_vpc" "default" {
   default = true
 }
@@ -19,7 +24,7 @@ data "aws_subnets" "default" {
   }
 }
 
-# Security Group for ECS Task
+# Security Group for ECS task
 resource "aws_security_group" "ecs_sg" {
   name        = "ecs-security-group"
   description = "Allow HTTP on port 5000"
@@ -45,27 +50,11 @@ resource "aws_ecs_cluster" "python_app_cluster" {
   name = "python-app-cluster"
 }
 
+# Attach required IAM policy to existing role
 resource "aws_iam_role_policy_attachment" "ecs_task_policy_attach" {
   role       = data.aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
-data "aws_iam_role" "ecs_task_execution_role" {
-  name = "ecsTaskExecutionRole"
-
-}
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action = "sts:AssumeRole",
-        Effect = "Allow",
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
 
 # ECS Task Definition
 resource "aws_ecs_task_definition" "python_task" {
@@ -75,7 +64,8 @@ resource "aws_ecs_task_definition" "python_task" {
   cpu                     = "256"
   memory                  = "512"
   execution_role_arn      = data.aws_iam_role.ecs_task_execution_role.arn
-  container_definitions   = jsonencode([
+
+  container_definitions = jsonencode([
     {
       name      = "python-app"
       image     = "${aws_ecr_repository.python_app_repo.repository_url}:latest"
@@ -106,4 +96,10 @@ resource "aws_ecs_service" "python_app_service" {
 
   depends_on = [aws_iam_role_policy_attachment.ecs_task_policy_attach]
 }
+
+# Output for GitHub Actions to use in Docker build step
+output "ecr_repo_url" {
+  value = aws_ecr_repository.python_app_repo.repository_url
+}
+
 
