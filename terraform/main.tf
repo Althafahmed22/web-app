@@ -97,9 +97,6 @@ resource "aws_ecs_service" "python_app_service" {
   depends_on = [aws_iam_role_policy_attachment.ecs_task_policy_attach]
 }
 
-# Output for GitHub Actions to use in Docker build step
-output "ecr_repo_url" {
-  value = aws_ecr_repository.python_app_repo.repository_url
-}
+
 
 
