@@ -9,7 +9,7 @@ data "aws_iam_role" "ecs_task_execution_role" {
 
 # ECR Repository
 resource "aws_ecr_repository" "python_app_repo" {
-  name = "python-app-repo-unique-2"
+  name = "python-app-repo-unique-4"
 }
 
 # Get default VPC and Subnets
@@ -26,7 +26,7 @@ data "aws_subnets" "default" {
 
 # Security Group for ECS task
 resource "aws_security_group" "ecs_sg" {
-  name        = "ecs-security-group-unique-2"
+  name        = "ecs-security-group-unique-4"
   description = "Allow HTTP on port 5000"
   vpc_id      = data.aws_vpc.default.id
 
