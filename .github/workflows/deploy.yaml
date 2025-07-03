@@ -32,11 +32,13 @@ jobs:
       run: |
         terraform init
         terraform apply -auto-approve
+      working-directory: ./terraform
 
     - name: Get ECR Repo URL from Terraform Output
       id: ecr
       run: |
         echo "ECR_URL=$(terraform output -raw ecr_repo_url)" >> $GITHUB_ENV
+      working-directory: ./terraform
 
     - name: Login to Amazon ECR
       run: |
@@ -46,4 +48,4 @@ jobs:
     - name: Build and Push Docker Image
       run: |
         docker build -t $ECR_URL:$IMAGE_TAG .
-        docker push $ECR_URL:$IMAGE_TAG
+        docker push $ECR_URL:$IMAGE_TAG 
