@@ -45,8 +45,8 @@ resource "aws_ecs_cluster" "python_app_cluster" {
   name = "python-app-cluster"
 }
 
-resource "aws_iam_role_policy_attachment" "ecs_task_policy_attach" {
-  role       = aws_iam_role.ecs_task_execution_role.name
+resource "data.aws_iam_role_policy_attachment" "ecs_task_policy_attach" {
+  role       = data.aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 data "aws_iam_role" "ecs_task_execution_role" {
