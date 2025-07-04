@@ -2,12 +2,12 @@ provider "aws" {
   region = var.region
 }
 
-# Use existing IAM role (must exist in AWS already)
+# Use existing IAM role
 data "aws_iam_role" "ecs_task_execution_role" {
   name = "ecsTaskExecutionRole"
 }
 
-# ECR Repository
+# Use existing ECR repository
 data "aws_ecr_repository" "python_app_repo" {
   name = "python-app-repo-unique-4"
 }
@@ -24,24 +24,16 @@ data "aws_subnets" "default" {
   }
 }
 
-# Security Group for ECS task
+# Use existing Security Group
 data "aws_security_group" "ecs_sg" {
-  name        = "ecs-security-group-unique-4"
-  description = "Allow HTTP on port 5000"
-  vpc_id      = data.aws_vpc.default.id
-
-  ingress {
-    from_port   = 5000
-    to_port     = 5000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+  filter {
+    name   = "group-name"
+    values = ["ecs-security-group-unique-4"]
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
   }
 }
 
@@ -50,7 +42,7 @@ resource "aws_ecs_cluster" "python_app_cluster" {
   name = "python-app-cluster"
 }
 
-# Attach required IAM policy to existing role
+# Attach policy to IAM role
 resource "aws_iam_role_policy_attachment" "ecs_task_policy_attach" {
   role       = data.aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
@@ -65,19 +57,15 @@ resource "aws_ecs_task_definition" "python_task" {
   memory                  = "512"
   execution_role_arn      = data.aws_iam_role.ecs_task_execution_role.arn
 
-  container_definitions = jsonencode([
-    {
-      name      = "python-app"
-      image     = "${aws_ecr_repository.python_app_repo.repository_url}:latest"
-      essential = true
-      portMappings = [
-        {
-          containerPort = 5000
-          protocol      = "tcp"
-        }
-      ]
-    }
-  ])
+  container_definitions = jsonencode([{
+    name      = "python-app"
+    image     = "${data.aws_ecr_repository.python_app_repo.repository_url}:latest"
+    essential = true
+    portMappings = [{
+      containerPort = 5000
+      protocol      = "tcp"
+    }]
+  }])
 }
 
 # ECS Service
@@ -96,7 +84,6 @@ resource "aws_ecs_service" "python_app_service" {
 
   depends_on = [aws_iam_role_policy_attachment.ecs_task_policy_attach]
 }
-
 
 
 
