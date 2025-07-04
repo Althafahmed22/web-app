@@ -28,10 +28,10 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: 1.6.6
-    - name: Terraform Destroy
-       run:|
-        terraform destroy -auto-approve
-      working-directory: ./terraform
+
+    - name: Terraform Destroy (Clean ECS Service)
+      continue-on-error: true
+      run: terraform -chdir=./terraform destroy -auto-approve
 
     - name: Terraform Init and Apply
       run: |
@@ -68,5 +68,6 @@ jobs:
 
     - name: Output App URL
       run: |
-         echo " deployed app : $APP_URL"
+        echo "Deployed app: $APP_URL"
+
 
