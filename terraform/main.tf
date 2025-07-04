@@ -8,7 +8,7 @@ data "aws_iam_role" "ecs_task_execution_role" {
 }
 
 # ECR Repository
-resource "aws_ecr_repository" "python_app_repo" {
+data "aws_ecr_repository" "python_app_repo" {
   name = "python-app-repo-unique-4"
 }
 
@@ -25,7 +25,7 @@ data "aws_subnets" "default" {
 }
 
 # Security Group for ECS task
-resource "aws_security_group" "ecs_sg" {
+data "aws_security_group" "ecs_sg" {
   name        = "ecs-security-group-unique-4"
   description = "Allow HTTP on port 5000"
   vpc_id      = data.aws_vpc.default.id
@@ -90,7 +90,7 @@ resource "aws_ecs_service" "python_app_service" {
 
   network_configuration {
     subnets         = data.aws_subnets.default.ids
-    security_groups = [aws_security_group.ecs_sg.id]
+    security_groups = [data.aws_security_group.ecs_sg.id]
     assign_public_ip = true
   }
 
