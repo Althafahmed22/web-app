@@ -2,17 +2,17 @@ provider "aws" {
   region = var.region
 }
 
-# Use existing IAM role
+# Use existing ECS task execution role
 data "aws_iam_role" "ecs_task_execution_role" {
   name = "ecsTaskExecutionRole"
 }
 
 # Use existing ECR repository
 data "aws_ecr_repository" "python_app_repo" {
-  name = "python-app-repo-unique-4"
+  name = "python-app-repo"
 }
 
-# Get default VPC and Subnets
+# Use existing default VPC and subnets
 data "aws_vpc" "default" {
   default = true
 }
@@ -24,17 +24,13 @@ data "aws_subnets" "default" {
   }
 }
 
-# Use existing Security Group
+# Use existing security group
 data "aws_security_group" "ecs_sg" {
   filter {
     name   = "group-name"
-    values = ["ecs-security-group-unique-4"]
+    values = ["ecs-security-group"]
   }
-
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
+  vpc_id = data.aws_vpc.default.id
 }
 
 # ECS Cluster
@@ -42,7 +38,7 @@ resource "aws_ecs_cluster" "python_app_cluster" {
   name = "python-app-cluster"
 }
 
-# Attach policy to IAM role
+# IAM policy attachment to existing role
 resource "aws_iam_role_policy_attachment" "ecs_task_policy_attach" {
   role       = data.aws_iam_role.ecs_task_execution_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
@@ -57,34 +53,34 @@ resource "aws_ecs_task_definition" "python_task" {
   memory                  = "512"
   execution_role_arn      = data.aws_iam_role.ecs_task_execution_role.arn
 
-  container_definitions = jsonencode([{
-    name      = "python-app"
-    image     = "${data.aws_ecr_repository.python_app_repo.repository_url}:latest"
-    essential = true
-    portMappings = [{
-      containerPort = 5000
-      protocol      = "tcp"
-    }]
-  }])
+  container_definitions = jsonencode([
+    {
+      name      = "python-app"
+      image     = "${data.aws_ecr_repository.python_app_repo.repository_url}:latest"
+      essential = true
+      portMappings = [
+        {
+          containerPort = 5000
+          protocol      = "tcp"
+        }
+      ]
+    }
+  ])
 }
 
 # ECS Service
 resource "aws_ecs_service" "python_app_service" {
-  name            = "python-app-service-v1"
+  name            = "python-app-service"
   cluster         = aws_ecs_cluster.python_app_cluster.id
   task_definition = aws_ecs_task_definition.python_task.arn
   desired_count   = 1
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = data.aws_subnets.default.ids
-    security_groups = [data.aws_security_group.ecs_sg.id]
+    subnets          = data.aws_subnets.default.ids
+    security_groups  = [data.aws_security_group.ecs_sg.id]
     assign_public_ip = true
   }
 
   depends_on = [aws_iam_role_policy_attachment.ecs_task_policy_attach]
-  lifecycle {
-    create_before_destroy = true
-  }
 }
-
