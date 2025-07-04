@@ -70,7 +70,7 @@ resource "aws_ecs_task_definition" "python_task" {
 
 # ECS Service
 resource "aws_ecs_service" "python_app_service" {
-  name            = "python-app-service"
+  name            = "python-app-service-1"
   cluster         = aws_ecs_cluster.python_app_cluster.id
   task_definition = aws_ecs_task_definition.python_task.arn
   desired_count   = 1
