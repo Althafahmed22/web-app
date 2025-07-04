@@ -60,7 +60,7 @@ resource "aws_ecs_task_definition" "python_task" {
       essential = true
       portMappings = [
         {
-          containerPort = 5000
+          containerPort = 80
           protocol      = "tcp"
         }
       ]
