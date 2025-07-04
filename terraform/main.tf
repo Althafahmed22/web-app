@@ -85,5 +85,10 @@ resource "aws_ecs_service" "python_app_service" {
   depends_on = [aws_iam_role_policy_attachment.ecs_task_policy_attach]
 }
 
+ lifecycle {
+    prevent_destroy = true
+    ignore_changes  = [desired_count]
+  }
+}
 
 
