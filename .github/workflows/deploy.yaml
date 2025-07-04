@@ -27,6 +27,8 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: 1.6.6
+    - name: Destroy Existing Resources
+      run : terraform destroy    
 
     - name: Terraform Init and Apply
       run: |
