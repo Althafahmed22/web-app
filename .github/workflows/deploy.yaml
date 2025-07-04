@@ -28,6 +28,10 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: 1.6.6
+    - name: Terraform Destroy
+       run:|
+        terraform destroy -auto-approve
+      working-directory: ./terraform
 
     - name: Terraform Init and Apply
       run: |
