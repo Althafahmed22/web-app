@@ -31,12 +31,11 @@ jobs:
 
     - name: Terraform Init and Apply
       run: |
-        terraform init
-        terraform apply -auto-approve
-      working-directory: ./terraform
+        terraform -chdir=./terraform init
+        terraform -chdir=./terraform apply -auto-approve
 
     - name: Get ECR Repo URL from Terraform Output
-      id: ecr
+      id: get_ecr
       run: |
         echo "ECR_URL=$(terraform -chdir=./terraform output -raw ecr_repo_url)" >> $GITHUB_ENV
 
@@ -51,7 +50,7 @@ jobs:
         docker push $ECR_URL:$IMAGE_TAG
 
     - name: Get ECS Task Public IP
-      id: get-public-ip
+      id: get_public_ip
       run: |
         CLUSTER_NAME=python-app-cluster
         SERVICE_NAME=python-app-service
@@ -64,5 +63,6 @@ jobs:
         echo "Deployed App is accessible at: http://$PUBLIC_IP:5000"
 
     - name: Output App URL
-      run: echo "✅ Open your deployed app at: $APP_URL"
- 
+      run: |
+         echo " deployed app : $APP_URL"
+
