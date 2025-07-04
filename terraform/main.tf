@@ -79,7 +79,7 @@ resource "aws_ecs_task_definition" "python_task" {
 
 # ECS Service
 resource "aws_ecs_service" "python_app_service" {
-  name            = "python-app-service-1"
+  name            = "python-app-service-0"
   cluster         = aws_ecs_cluster.python_app_cluster.id
   task_definition = aws_ecs_task_definition.python_task.arn
   desired_count   = 1
@@ -92,4 +92,8 @@ resource "aws_ecs_service" "python_app_service" {
   }
 
   depends_on = [aws_iam_role_policy_attachment.ecs_task_policy_attach]
+lifecycle {
+  create_before_destroy = true
+  ignore_changes        = [desired_count]
+}
 }
