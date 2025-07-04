@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: us-west-2
-  IMAGE_TAG: latest 
+  IMAGE_TAG: latest
 
 jobs:
   deploy:
@@ -23,17 +23,12 @@ jobs:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: ${{ env.AWS_REGION }}
+
     - name: Setup Terraform
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: 1.6.6
-    - name: Terraform Init (Before Destroy)
-      run: terraform init
-      working-directory: ./terraform
 
-    - name: Destroy Existing Resources (Optional)
-      run: terraform destroy -auto-approve
-      working-directory: ./terraform
     - name: Terraform Init and Apply
       run: |
         terraform init
@@ -43,8 +38,7 @@ jobs:
     - name: Get ECR Repo URL from Terraform Output
       id: ecr
       run: |
-        echo "ECR_URL=$(terraform output -raw ecr_repo_url)" >> $GITHUB_ENV
-      working-directory: ./terraform
+        echo "ECR_URL=$(terraform -chdir=./terraform output -raw ecr_repo_url)" >> $GITHUB_ENV
 
     - name: Login to Amazon ECR
       run: |
@@ -54,4 +48,21 @@ jobs:
     - name: Build and Push Docker Image
       run: |
         docker build -t $ECR_URL:$IMAGE_TAG ./web-app
-        docker push $ECR_URL:$IMAGE_TAG 
+        docker push $ECR_URL:$IMAGE_TAG
+
+    - name: Get ECS Task Public IP
+      id: get-public-ip
+      run: |
+        CLUSTER_NAME=python-app-cluster
+        SERVICE_NAME=python-app-service
+
+        TASK_ARN=$(aws ecs list-tasks --cluster $CLUSTER_NAME --service-name $SERVICE_NAME --query 'taskArns[0]' --output text)
+        ENI_ID=$(aws ecs describe-tasks --cluster $CLUSTER_NAME --tasks $TASK_ARN --query 'tasks[0].attachments[0].details[?name==`networkInterfaceId`].value' --output text)
+        PUBLIC_IP=$(aws ec2 describe-network-interfaces --network-interface-ids $ENI_ID --query 'NetworkInterfaces[0].Association.PublicIp' --output text)
+
+        echo "APP_URL=http://$PUBLIC_IP:5000" >> $GITHUB_ENV
+        echo "Deployed App is accessible at: http://$PUBLIC_IP:5000"
+
+    - name: Output App URL
+      run: echo "✅ Open your deployed app at: $APP_URL"
+ 
